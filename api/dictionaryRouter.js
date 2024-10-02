@@ -1,6 +1,6 @@
 import express from 'express';
 
-const dictionary = [];
+let dictionary = [];
 
 export const dictionaryRouter = express.Router();
 
@@ -49,11 +49,13 @@ dictionaryRouter.post('/', (req, res) => {
         }
     }
 
-    if (dictionary.includes(req.body.word)) {
-        return res.status(400).json({
-            status: 'error',
-            msg: 'Toks zodis jau egzistuoja',
-        });
+    for (const word of dictionary) {
+        if (word.toLowerCase() === req.body.word.toLowerCase()) {
+            return res.status(400).json({
+                status: 'error',
+                msg: 'Toks zodis jau egzistuoja',
+            });
+        }
     }
 
     dictionary.push(req.body.word);
@@ -64,24 +66,68 @@ dictionaryRouter.post('/', (req, res) => {
     });
 });
 
-dictionaryRouter.put('/', (req, res) => {
-    return res.status(501).send('(PUT) DICTIONARY: Not implemented');
+// /api/dictionary/:word + BODY {newWord: 'asd'}
+
+dictionaryRouter.put('/:word', (req, res) => {
+    const { newWord } = req.body;
+    const { word } = req.params;
+
+    const abc = 'aąbcčdeęėfghiįyjklmnoprsštuųūvzžAĄBCČDEĘĖFGHIĮYJKLMNOPRSŠTUŲŪVZŽ';
+
+    if (typeof newWord !== 'string') {
+        return res.status(400).json({
+            status: 'error',
+            msg: 'Keiciama zodzio reiksme turi buti tekstine',
+        });
+    }
+
+    if (newWord === '') {
+        return res.status(400).json({
+            status: 'error',
+            msg: 'Keiciamas zodis negali buti tuscias',
+        });
+    }
+
+    for (const letter of newWord) {
+        if (!abc.includes(letter)) {
+            return res.status(400).json({
+                status: 'error',
+                msg: `Nurodytoje keiciamoje reiksmeje yra neleistinas simbolis "${letter}", del to zodis nebuvo priimtas`,
+            });
+        }
+    }
+
+    for (let i = 0; i < dictionary.length; i++) {
+        if (dictionary[i].toLowerCase() === word.toLowerCase()) {
+            dictionary[i] = newWord;
+
+            return res.status(200).json({
+                status: 'success',
+                msg: 'Zodis sekmingai isstrintas',
+            });
+        }
+    }
+
+    return res.status(400).json({
+        status: 'error',
+        msg: `Norimas keisti zodis nerastas`,
+    });
 });
 
-// http://localhost:5114/api/dictionary/zodis
-// http://localhost:5114/api/dictionary?word=zodis
-// http://localhost:5114/api/dictionary/1
-// http://localhost:5114/api/dictionary?id=1
-// http://localhost:5114/api/dictionary + BODY: {word: 'zodis'}
+dictionaryRouter.delete('/:word', (req, res) => {
+    for (const word of dictionary) {
+        if (word.toLowerCase() === req.params.word.toLowerCase()) {
+            dictionary = dictionary.filter(w => w.toLowerCase() !== req.params.word.toLowerCase());
 
-// http://localhost:5114/api/dictionary + BODY: {word: 'zodis', count:3, color: 'red'}
-// http://localhost:5114/api/dictionary?word=zodis&count=3&color=red
+            return res.status(200).json({
+                status: 'success',
+                msg: 'Zodis sekmingai isstrintas',
+            });
+        }
+    }
 
-
-dictionaryRouter.delete('/', (req, res) => {
-    console.log('PARAMS:', req.params);
-    console.log('JSON:', req.body);
-
-
-    return res.status(501).send('(DELETE) DICTIONARY: Not implemented');
+    return res.status(400).json({
+        status: 'error',
+        msg: 'Toks zodis neegzistuoja',
+    });
 });
