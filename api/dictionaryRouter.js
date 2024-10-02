@@ -1,4 +1,6 @@
 import express from 'express';
+import { isValidWord } from '../lib/isValidWord.js';
+import { isInDictionary } from '../lib/isInDictionary.js';
 
 let dictionary = [];
 
@@ -9,15 +11,7 @@ dictionaryRouter.get('/', (req, res) => {
 });
 
 dictionaryRouter.post('/', (req, res) => {
-    const abc = 'aąbcčdeęėfghiįyjklmnoprsštuųūvzžAĄBCČDEĘĖFGHIĮYJKLMNOPRSŠTUŲŪVZŽ';
     const requiredKeys = ['word'];
-
-    if (req.body.word === undefined) {
-        return res.status(400).json({
-            status: 'error',
-            msg: 'Gautas objekto formatas neatitinka reikalavimu - reikalingas raktas "word"',
-        });
-    }
 
     if (Object.keys(req.body).length !== requiredKeys.length) {
         return res.status(400).json({
@@ -26,39 +20,25 @@ dictionaryRouter.post('/', (req, res) => {
         });
     }
 
-    if (typeof req.body.word !== 'string') {
+    const { word } = req.body;
+
+    const [wordValid, wordMsg] = isValidWord(word);
+    if (!wordValid) {
         return res.status(400).json({
             status: 'error',
-            msg: 'I zodyna galima itraukti tik teksto tipo reiksmes',
+            msg: wordMsg,
         });
     }
 
-    if (req.body.word === '') {
+    const [wordFound, wordFoundMsg] = isInDictionary(word, dictionary);
+    if (wordFound) {
         return res.status(400).json({
             status: 'error',
-            msg: 'Zodis privalo buti ne tuscias tekstas',
+            msg: wordFoundMsg,
         });
     }
 
-    for (const letter of req.body.word) {
-        if (!abc.includes(letter)) {
-            return res.status(400).json({
-                status: 'error',
-                msg: `Nurodytoje reiksmeje yra neleistinas simbolis "${letter}", del to zodis nebuvo priimtas`,
-            });
-        }
-    }
-
-    for (const word of dictionary) {
-        if (word.toLowerCase() === req.body.word.toLowerCase()) {
-            return res.status(400).json({
-                status: 'error',
-                msg: 'Toks zodis jau egzistuoja',
-            });
-        }
-    }
-
-    dictionary.push(req.body.word);
+    dictionary.push(word);
 
     return res.status(201).json({
         status: 'success',
@@ -66,35 +46,32 @@ dictionaryRouter.post('/', (req, res) => {
     });
 });
 
-// /api/dictionary/:word + BODY {newWord: 'asd'}
-
 dictionaryRouter.put('/:word', (req, res) => {
     const { newWord } = req.body;
     const { word } = req.params;
 
-    const abc = 'aąbcčdeęėfghiįyjklmnoprsštuųūvzžAĄBCČDEĘĖFGHIĮYJKLMNOPRSŠTUŲŪVZŽ';
-
-    if (typeof newWord !== 'string') {
+    const [newWordValid, newWordMsg] = isValidWord(newWord);
+    if (!newWordValid) {
         return res.status(400).json({
             status: 'error',
-            msg: 'Keiciama zodzio reiksme turi buti tekstine',
+            msg: newWordMsg,
         });
     }
 
-    if (newWord === '') {
+    const [wordValid, wordMsg] = isValidWord(word);
+    if (!wordValid) {
         return res.status(400).json({
             status: 'error',
-            msg: 'Keiciamas zodis negali buti tuscias',
+            msg: wordMsg,
         });
     }
 
-    for (const letter of newWord) {
-        if (!abc.includes(letter)) {
-            return res.status(400).json({
-                status: 'error',
-                msg: `Nurodytoje keiciamoje reiksmeje yra neleistinas simbolis "${letter}", del to zodis nebuvo priimtas`,
-            });
-        }
+    const [wordFound, wordFoundMsg] = isInDictionary(newWord, dictionary);
+    if (wordFound) {
+        return res.status(400).json({
+            status: 'error',
+            msg: wordFoundMsg,
+        });
     }
 
     for (let i = 0; i < dictionary.length; i++) {
@@ -103,7 +80,7 @@ dictionaryRouter.put('/:word', (req, res) => {
 
             return res.status(200).json({
                 status: 'success',
-                msg: 'Zodis sekmingai isstrintas',
+                msg: 'Zodis sekmingai pakeistas',
             });
         }
     }
@@ -115,19 +92,35 @@ dictionaryRouter.put('/:word', (req, res) => {
 });
 
 dictionaryRouter.delete('/:word', (req, res) => {
-    for (const word of dictionary) {
-        if (word.toLowerCase() === req.params.word.toLowerCase()) {
-            dictionary = dictionary.filter(w => w.toLowerCase() !== req.params.word.toLowerCase());
+    const { word } = req.params;
 
-            return res.status(200).json({
-                status: 'success',
-                msg: 'Zodis sekmingai isstrintas',
-            });
-        }
+    const [wordValid, wordMsg] = isValidWord(word);
+    if (!wordValid) {
+        return res.status(400).json({
+            status: 'error',
+            msg: wordMsg,
+        });
     }
 
-    return res.status(400).json({
+    const [wordFound, wordFoundMsg] = isInDictionary(word, dictionary);
+    if (!wordFound) {
+        return res.status(400).json({
+            status: 'error',
+            msg: wordFoundMsg,
+        });
+    }
+
+    dictionary = dictionary.filter(fw => fw.toLowerCase() !== word.toLowerCase());
+
+    return res.status(200).json({
+        status: 'success',
+        msg: 'Zodis sekmingai isstrintas',
+    });
+});
+
+dictionaryRouter.all('*', (req, res) => {
+    return res.json({
         status: 'error',
-        msg: 'Toks zodis neegzistuoja',
+        msg: 'Bandai kazka kas nesuplanuota...',
     });
 });
