@@ -21,6 +21,7 @@
 
 ## GET: /api/schedule/:dienos-id
 
+-   grazina konkrecios savaites dienos pamoku tvarkarasti
 -   pvz.: `GET: /api/schedule/1`
 
 ```json
@@ -39,6 +40,9 @@
 
 ## POST: /api/schedule
 
+-   sukuriamas visos savaites pamoku tvarkarastis
+-   siunciamo objekto pvz:
+
 ```json
 {
     "schedule": [
@@ -55,7 +59,8 @@
 
 ## PUT: /api/schedule/:dienos-id
 
--   pvz.: `PUT: /api/schedule/1`
+-   atnaujinamas konkrecios savaites dienos pamoku tvarkarastis
+-   siunciamo objekto pvz.: `PUT: /api/schedule/1`
 
 ```json
 {
@@ -65,6 +70,7 @@
 
 ## PATCH: /api/schedule/:dienos-id/:pamokos-id
 
+-   pakeiciamos konkrecios dienos konkrecios pamokos reiksme
 -   pvz.: `PATCH: /api/schedule/1/2` (pirmadienio antra pamoka)
 
 ```json
@@ -74,3 +80,5 @@
 ```
 
 ## DELETE: /api/schedule/:dienos-id
+
+-   is pamoku tvarkarascio pasalinamos visos pamokos is nurodytos dienos
